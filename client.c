@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 
+
 char prompt[]="Chatroom> ";
 
 /*
@@ -16,8 +17,17 @@ void usage(){
   printf("-h  print help\n");
   printf("-a  IP address of the server[Required]\n");
   printf("-p  port number of the server[Required]\n");
+  printf("-u  enter your username[Required]\n");
 }
 
+
+/*
+* @brief-: connects the client to ther sever
+* NOTE-: THE function traverses the list to find appropriate socket Connection [ is robust]
+* @port-: port number
+* @hostname-: ip address of the server
+* @return -: connection file descriptor
+*/
 
 int connection(char* hostname, char* port){
   int clientfd,rc;
@@ -66,24 +76,27 @@ int connection(char* hostname, char* port){
 }
 
 int main(int argc, char **argv){
-  char *address=NULL,*port=NULL,*username;
+  char *address=NULL,*port=NULL,*username=NULL;
   char c;
   //parsing command line arguments
-  while((c = getopt(argc, argv, "hu:a:p:")) != EOF){
+  while((c = getopt(argc, argv, "hu:a:p:u:")) != EOF){
     switch(c){
       // print help
       case 'h':
          usage();
+         exit(1);
          break;
       // get server address
       case 'a':
          address=optarg;
-         printf("%s\n",address);
          break;
       // get server port number
       case 'p':
          port=optarg;
-         printf("%s\n",port);
+         break;
+      // get the username
+      case 'u':
+         username=optarg;
          break;
 
       default:
@@ -95,12 +108,12 @@ int main(int argc, char **argv){
 
    }
 
-
-   if(optind  == 1 || port == NULL || address == NULL){
+   if(optind  == 1 || port == NULL || address == NULL || username == NULL){
     printf("Invalid usage\n");
     usage();
     exit(1); }
 
     int connID=connection(address,port);
-    
+
+
 }
