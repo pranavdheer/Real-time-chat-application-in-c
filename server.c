@@ -85,7 +85,6 @@ void* client_handler(void *vargp ){
    int confd = *((int *)vargp);
 
 
-
 }
 
 int main(int argc,char **argv){
@@ -116,7 +115,7 @@ int main(int argc,char **argv){
       // assign space in the heap [prevents data race]
       confd=malloc(sizeof(int));
       *confd=accept(listen, (struct sockaddr *)&clientaddr, &clientlen);
-
+      printf("A new client is online\n ");
       // assign a seperate thread to deal with the new client
        pthread_create(&tid,NULL,client_handler, confd);
 

@@ -8,6 +8,9 @@
 #include <errno.h>
 
 
+
+#define MAXLINE 1024 /* max line size */
+
 char prompt[]="Chatroom> ";
 
 /*
@@ -77,6 +80,7 @@ int connection(char* hostname, char* port){
 
 int main(int argc, char **argv){
   char *address=NULL,*port=NULL,*username=NULL;
+  char cmd[MAXLINE];
   char c;
   //parsing command line arguments
   while((c = getopt(argc, argv, "hu:a:p:u:")) != EOF){
@@ -114,6 +118,28 @@ int main(int argc, char **argv){
     exit(1); }
 
     int connID=connection(address,port);
+    if(connID == -1){
+       printf("Couldn't connect to the server\n");
+       exit(1);
+    }
 
+
+    while(1){
+      // print the Chatroom prompt
+      printf("%s",prompt);
+
+      // read the command
+      if ((fgets(cmd, MAXLINE, stdin) == NULL) && ferror(stdin)) {
+            perror("fgets error");
+            exit(1);
+        }
+     // remove the newline from the command
+     char *newline = strchr(cmd, '\n');
+      if (newline != NULL) {
+          *newline = '\0';
+      }
+  
+
+    }
 
 }
