@@ -23,6 +23,16 @@ void usage(){
   printf("-u  enter your username[Required]\n");
 }
 
+/*
+* get the chatroom functions
+*/
+void Chatroom_help(){
+  printf("help: get usage\n");
+  printf("msg \"text\" : send the msg to all the clients online\n");
+  printf("msg \"@user text\" :send the msg to a particular client\n");
+  printf("online: get the username of all the clients online\n");
+  printf("quit: exit the chatroom\n");
+}
 
 /*
 * @brief-: connects the client to ther sever
@@ -77,6 +87,21 @@ int connection(char* hostname, char* port){
             return clientfd;
     }
 }
+
+/*
+* @brief-: function to decipher the command entered by the client
+* @cmd-: command
+*/
+void evaluate(char* cmd){
+
+  if(strcmp(cmd,"help") == 0)
+     Chatroom_help();
+
+
+
+
+  }
+
 
 int main(int argc, char **argv){
   char *address=NULL,*port=NULL,*username=NULL;
@@ -138,7 +163,8 @@ int main(int argc, char **argv){
       if (newline != NULL) {
           *newline = '\0';
       }
-  
+      // decipher the client command
+      evaluate(cmd);
 
     }
 
