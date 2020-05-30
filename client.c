@@ -6,7 +6,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
-
+#include "helper.h"
 
 
 #define MAXLINE 1024 /* max line size */
@@ -148,6 +148,7 @@ int main(int argc, char **argv){
        exit(1);
     }
 
+    // send the server , your username
 
     while(1){
       // print the Chatroom prompt
