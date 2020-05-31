@@ -15,20 +15,45 @@
 // mutex lock for global data access
 pthread_mutex_t mutex;
 
+struct client{
+    char *name;
+    int confd;
+    struct client *next;
+};
 
-
-typedef struct server{
-    char
-
-
-
-}
+struct client *header=NULL;
 
 //**********************************************************************************
 
+/*
+ * @brief-: add user to the global user DATA_STRUCTURES
+ * INSERTION AN HEAD -> O(1) complexity
+*/
+
+void add_user(struct client *user){
+
+   if(header == NULL){
+     header=user;
+     user->next=NULL;
+   }
+   else{
+      user->next=header;
+
+      header=user;
+   }
+}
+
+void display_users(){
+  struct client *user=header;
+  while(user!=NULL){
+    printf("%s ",user->name);
+    printf("%d\n",user->confd);
+    user=user->next;
+
+  }
 
 
-
+}
 /*
 * @brief-: assigns a listning socket at a given port number
 * NOTE-: THE function traverses the list to find appropriate socket Connection
@@ -100,6 +125,7 @@ void* client_handler(void *vargp ){
 
   char username[bufsize];
   rio_t rio;
+  struct client *user;
   long byte_size;
   // detaching the thread from peers
   // so it no longer needs to be
@@ -118,10 +144,27 @@ void* client_handler(void *vargp ){
     }
     //strip the newline from the string
     username[byte_size-1]='\0';
-    // thread lock
-    pthread_mutex_lock(&mutex);
+    // assign space in the global structure
+    user=malloc(sizeof(struct client));
+    // error handling
+    if (user == NULL){
+      perror("memory can't be assigned");
+      close(confd);
+      free(vargp);
+      return NULL;
+    }
+    // user->name=username is not safe
+    // as the local stack can be accessed by peer threads
+    // assign space in heap
+    user->name=malloc(sizeof(username));
+    memcpy(user->name,username,strlen(username)+1);
+    user->confd=confd;
 
-    //unlock thread
+    //lock
+    pthread_mutex_lock(&mutex);
+    add_user(user);
+    display_users();
+    //unlock
     pthread_mutex_unlock(&mutex);
     return NULL;
 }
