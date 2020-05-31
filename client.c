@@ -107,6 +107,8 @@ int main(int argc, char **argv){
   char *address=NULL,*port=NULL,*username=NULL;
   char cmd[MAXLINE];
   char c;
+  rio_t rio;
+
   //parsing command line arguments
   while((c = getopt(argc, argv, "hu:a:p:u:")) != EOF){
     switch(c){
@@ -147,8 +149,15 @@ int main(int argc, char **argv){
        printf("Couldn't connect to the server\n");
        exit(1);
     }
-
+    // add a newline
+    sprintf(username,"%s\n",username);
+    
     // send the server , your username
+    if(rio_writen(connID,username,strlen(username)) == -1){
+       perror("not able to send the data");
+       close(connID);
+       exit(1);
+    }
 
     while(1){
       // print the Chatroom prompt
@@ -157,6 +166,7 @@ int main(int argc, char **argv){
       // read the command
       if ((fgets(cmd, MAXLINE, stdin) == NULL) && ferror(stdin)) {
             perror("fgets error");
+            close(connID);
             exit(1);
         }
      // remove the newline from the command

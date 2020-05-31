@@ -9,7 +9,25 @@
 #include <pthread.h>
 #include "helper.h"
 
-size_t bufsize = 1000;
+//********************GLOBAL DATA_STRUCTURES & CONSTANTS****************************
+#define bufsize 1000
+
+// mutex lock for global data access
+pthread_mutex_t mutex;
+
+
+
+typedef struct server{
+    char
+
+
+
+}
+
+//**********************************************************************************
+
+
+
 
 /*
 * @brief-: assigns a listning socket at a given port number
@@ -21,7 +39,7 @@ size_t bufsize = 1000;
 int connection(char * port){
 
    struct addrinfo *p, *listp, hints;
-   int rc,listenfd;
+   int rc,listenfd,optval=1;
 
    //initialise to zero
    memset(&hints,0,sizeof(struct addrinfo));
@@ -43,6 +61,9 @@ int connection(char * port){
        if (listenfd < 0) {
          continue; /* Socket failed, try the next */
        }
+
+       /* Eliminates "Address already in use" error from bind */
+      setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval,sizeof(int));
       //bind the socket, returns 0 on Success
       if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0) {
           break; /* Success */
@@ -77,6 +98,9 @@ int connection(char * port){
 */
 void* client_handler(void *vargp ){
 
+  char username[bufsize];
+  rio_t rio;
+  long byte_size;
   // detaching the thread from peers
   // so it no longer needs to be
   // terminated in the main thread
@@ -84,9 +108,22 @@ void* client_handler(void *vargp ){
 
    // saving the connection fd on function stack
    int confd = *((int *)vargp);
+   rio_readinitb(&rio, confd);
 
+    // read the user name as a single line , -1 is for error handling
+    if( (byte_size=rio_readlineb(&rio,username,bufsize)) == -1){
+         close(confd);
+         free(vargp);
+         return NULL;
+    }
+    //strip the newline from the string
+    username[byte_size-1]='\0';
+    // thread lock
+    pthread_mutex_lock(&mutex);
 
-
+    //unlock thread
+    pthread_mutex_unlock(&mutex);
+    return NULL;
 }
 
 int main(int argc,char **argv){
@@ -117,7 +154,7 @@ int main(int argc,char **argv){
       // assign space in the heap [prevents data race]
       confd=malloc(sizeof(int));
       *confd=accept(listen, (struct sockaddr *)&clientaddr, &clientlen);
-      printf("A new client is online\n ");
+      printf("A new client is online\n");
       // assign a seperate thread to deal with the new client
        pthread_create(&tid,NULL,client_handler, confd);
 
