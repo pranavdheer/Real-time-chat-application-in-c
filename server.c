@@ -43,17 +43,6 @@ void add_user(struct client *user){
    }
 }
 
-void display_users(){
-  struct client *user=header;
-  while(user!=NULL){
-    printf("%s ",user->name);
-    printf("%d\n",user->confd);
-    user=user->next;
-
-  }
-
-
-}
 /*
 * @brief-: assigns a listning socket at a given port number
 * NOTE-: THE function traverses the list to find appropriate socket Connection
@@ -117,6 +106,30 @@ int connection(char * port){
       return listenfd;
 }
 
+void evaluate(char *buf ,int confd){
+
+  char response[bufsize];
+  struct client *user=header;
+
+
+  if(!strcmp(buf,"help")){
+        sprintf(response,"msg \"text\" : send the msg to all the clients online\n");
+        sprintf(response,"%smsg \"@user text\" :send the msg to a particular client\n",response);
+        sprintf(response,"%sonline : get the username of all the clients online\n",response);
+        sprintf(response,"%squit : exit the chatroom\n\r\n",response);
+   }
+   // get the online user name
+   else if (!strcmp(buf,"online")){
+        while(user!=NULL){
+        sprintf(response,"%s%s\n",response,user->name);
+        user=user->next;
+        }
+    sprintf(response,"%s\r\n",response);
+   }
+
+   rio_writen(confd,response,strlen(response));
+
+}
 /*
 * @brief-: the function handles incoming clients concurrently
 * @vargp-: poiner to the connection file descriptor
@@ -127,6 +140,7 @@ void* client_handler(void *vargp ){
   rio_t rio;
   struct client *user;
   long byte_size;
+  char buf[bufsize];
   // detaching the thread from peers
   // so it no longer needs to be
   // terminated in the main thread
@@ -163,9 +177,19 @@ void* client_handler(void *vargp ){
     //lock
     pthread_mutex_lock(&mutex);
     add_user(user);
-    display_users();
     //unlock
     pthread_mutex_unlock(&mutex);
+
+    // read client response
+    while((byte_size=rio_readlineb(&rio,buf,bufsize)) >0){
+        
+        //strip the newline from the string
+        buf[byte_size-1]='\0';
+        // take appropriate action
+        evaluate(buf,confd);
+
+    }
+
     return NULL;
 }
 

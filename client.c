@@ -23,16 +23,6 @@ void usage(){
   printf("-u  enter your username[Required]\n");
 }
 
-/*
-* get the chatroom functions
-*/
-void Chatroom_help(){
-  printf("help: get usage\n");
-  printf("msg \"text\" : send the msg to all the clients online\n");
-  printf("msg \"@user text\" :send the msg to a particular client\n");
-  printf("online: get the username of all the clients online\n");
-  printf("quit: exit the chatroom\n");
-}
 
 /*
 * @brief-: connects the client to ther sever
@@ -88,27 +78,13 @@ int connection(char* hostname, char* port){
     }
 }
 
-/*
-* @brief-: function to decipher the command entered by the client
-* @cmd-: command
-*/
-void evaluate(char* cmd){
-
-  if(strcmp(cmd,"help") == 0)
-     Chatroom_help();
-
-
-
-
-  }
-
 
 int main(int argc, char **argv){
   char *address=NULL,*port=NULL,*username=NULL;
   char cmd[MAXLINE];
   char c;
   rio_t rio;
-
+  char buf[MAXLINE];
   //parsing command line arguments
   while((c = getopt(argc, argv, "hu:a:p:u:")) != EOF){
     switch(c){
@@ -151,13 +127,15 @@ int main(int argc, char **argv){
     }
     // add a newline
     sprintf(username,"%s\n",username);
-    
+
     // send the server , your username
     if(rio_writen(connID,username,strlen(username)) == -1){
        perror("not able to send the data");
        close(connID);
        exit(1);
     }
+    // initialise rio data structure
+    rio_readinitb(&rio, connID);
 
     while(1){
       // print the Chatroom prompt
@@ -169,13 +147,19 @@ int main(int argc, char **argv){
             close(connID);
             exit(1);
         }
-     // remove the newline from the command
-     char *newline = strchr(cmd, '\n');
-      if (newline != NULL) {
-          *newline = '\0';
+
+      // send the request to the server
+      if (rio_writen(connID,cmd,strlen(cmd)) == -1){
+        perror("not able to send the data");
+        close(connID);
+        exit(1);
       }
-      // decipher the client command
-      evaluate(cmd);
+      //read server response
+      while((rio_readlineb(&rio,buf,MAXLINE)) >0){
+              if(!strcmp(buf,"\r\n"))
+                break;
+              printf("%s",buf);
+      }
 
     }
 
