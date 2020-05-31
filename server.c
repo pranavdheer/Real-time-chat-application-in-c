@@ -120,13 +120,14 @@ void evaluate(char *buf ,int confd){
    }
    // get the online user name
    else if (!strcmp(buf,"online")){
+        // empty the buffer
+        response[0]='\0';
         while(user!=NULL){
         sprintf(response,"%s%s\n",response,user->name);
         user=user->next;
         }
     sprintf(response,"%s\r\n",response);
    }
-
    rio_writen(confd,response,strlen(response));
 
 }
@@ -182,7 +183,7 @@ void* client_handler(void *vargp ){
 
     // read client response
     while((byte_size=rio_readlineb(&rio,buf,bufsize)) >0){
-        
+
         //strip the newline from the string
         buf[byte_size-1]='\0';
         // take appropriate action
