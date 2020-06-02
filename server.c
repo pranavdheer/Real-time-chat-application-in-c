@@ -42,6 +42,30 @@ void add_user(struct client *user){
       header=user;
    }
 }
+/*
+ * @brief-: delete client from thr global list
+ *  O(n) complexity
+ */
+void delete_user(confd){
+   struct client *user=header;
+   struct client *previous=NULL;
+   // identify the user
+   while(user->confd!=confd){
+     previous=user;
+     user=user->next;
+   }
+
+   if(previous == NULL)
+      header=user->next;
+
+   else
+     previous->next=user->next;
+
+   // free the resources
+   free(user->name);
+   free(user);
+
+}
 
 /*
 * @brief-: assigns a listning socket at a given port number
@@ -106,29 +130,107 @@ int connection(char * port){
       return listenfd;
 }
 
-void evaluate(char *buf ,int confd){
+/*
+ * send msg to all the clients
+ */
+void send_msg(int confd,char* msg, char* receiver, char* sender){
+
+    char response[bufsize];
+    struct client *user=header;
+    if(receiver == NULL)
+     while (user != NULL){
+      if (user->confd == confd){
+         strcpy(response,"msg sent\n\r\n");
+         rio_writen(user->confd,response,strlen(response));
+       }
+
+      else{
+         sprintf(response,"start\n%s:%s\n\r\n",sender,msg);
+         rio_writen(user->confd,response,strlen(response));
+      }
+      user=user->next;
+    }
+   else{
+       while (user != NULL){
+         if(!strcmp(user->name,receiver)){
+           sprintf(response,"start\n%s:%s\n\r\n",sender,msg);
+           rio_writen(user->confd,response,strlen(response));
+           strcpy(response,"msg sent\n\r\n");
+           rio_writen(confd,response,strlen(response));
+           return;
+         }
+         user=user->next;
+       }
+        strcpy(response,"user not found\n\r\n");
+        rio_writen(confd,response,strlen(response));
+
+   }
+
+}
+
+void evaluate(char *buf ,int confd ,char *username){
 
   char response[bufsize];
+  char msg[bufsize];
+  char receiver[bufsize];
+  char keyword[bufsize];
+  // clear the buffer
+  msg[0]='\0';
+  receiver[0]='\0';
+  keyword[0]='\0';
   struct client *user=header;
 
 
   if(!strcmp(buf,"help")){
         sprintf(response,"msg \"text\" : send the msg to all the clients online\n");
-        sprintf(response,"%smsg \"@user text\" :send the msg to a particular client\n",response);
+        sprintf(response,"%smsg \"text\" user :send the msg to a particular client\n",response);
         sprintf(response,"%sonline : get the username of all the clients online\n",response);
         sprintf(response,"%squit : exit the chatroom\n\r\n",response);
+        rio_writen(confd,response,strlen(response));
+        return;
    }
    // get the online user name
-   else if (!strcmp(buf,"online")){
+   if (!strcmp(buf,"online")){
         // empty the buffer
         response[0]='\0';
+        //global access should be exclusive
+        pthread_mutex_lock(&mutex);
         while(user!=NULL){
         sprintf(response,"%s%s\n",response,user->name);
         user=user->next;
+
         }
     sprintf(response,"%s\r\n",response);
+    //global access should be exclusive
+    pthread_mutex_unlock(&mutex);
+    rio_writen(confd,response,strlen(response));
+    return;
    }
-   rio_writen(confd,response,strlen(response));
+
+   if (!strcmp(buf,"quit")){
+      pthread_mutex_lock(&mutex);
+      delete_user(confd);
+      pthread_mutex_unlock(&mutex);
+      strcpy(response,"exit");
+      rio_writen(confd,response,strlen(response));
+      close(confd);
+      return;
+
+   }
+
+   sscanf(buf,"%s \" %[^\"] \"%s",keyword,msg,receiver);
+
+   if (!strcmp(keyword,"msg")){
+
+        pthread_mutex_lock(&mutex);
+        send_msg(confd,msg,receiver,username);
+        pthread_mutex_unlock(&mutex);
+   }
+  else {
+     strcpy(response,"Invalid command\n\r\n");
+     rio_writen(confd,response,strlen(response));
+
+  }
 
 }
 /*
@@ -187,7 +289,7 @@ void* client_handler(void *vargp ){
         //strip the newline from the string
         buf[byte_size-1]='\0';
         // take appropriate action
-        evaluate(buf,confd);
+        evaluate(buf,confd,username);
 
     }
 

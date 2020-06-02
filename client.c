@@ -6,13 +6,13 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 #include "helper.h"
-
 
 #define MAXLINE 1024 /* max line size */
 
 char prompt[]="Chatroom> ";
-
+int flag=0;
 /*
 get the usage of the script
 */
@@ -78,13 +78,48 @@ int connection(char* hostname, char* port){
     }
 }
 
+// read server response
+void reader(void* var){
+  char buf[MAXLINE];
+  rio_t rio;
+  int status;
+  int connID=(int)var;
+  // initialise rio data structure
+  rio_readinitb(&rio, connID);
+  while(1){
+     while((status=rio_readlineb(&rio,buf,MAXLINE)) >0){
+          //error
+          if(status == -1)
+            exit(1);
+          if(!strcmp(buf,"\r\n")){
+              break;
+            }
+          // exit from the server
+          if (!strcmp(buf,"exit")){
+              close(connID);
+              exit(0);
+            }
+          if (!strcmp(buf,"start\n")){
+
+               printf("\n");
+            }
+
+          else
+             printf("%s",buf);
+      }
+      // print the Chatroom prompt
+      printf("%s",prompt);
+      fflush(stdout);
+  }
+}
 
 int main(int argc, char **argv){
+
+
   char *address=NULL,*port=NULL,*username=NULL;
   char cmd[MAXLINE];
   char c;
-  rio_t rio;
-  char buf[MAXLINE];
+  pthread_t tid;
   //parsing command line arguments
   while((c = getopt(argc, argv, "hu:a:p:u:")) != EOF){
     switch(c){
@@ -134,13 +169,12 @@ int main(int argc, char **argv){
        close(connID);
        exit(1);
     }
-    // initialise rio data structure
-    rio_readinitb(&rio, connID);
 
+    // a thread for reading server response
+    pthread_create(&tid,NULL,reader, (void*)connID);
+    // print the Chatroom prompt
+    printf("%s",prompt);
     while(1){
-      // print the Chatroom prompt
-      printf("%s",prompt);
-
       // read the command
       if ((fgets(cmd, MAXLINE, stdin) == NULL) && ferror(stdin)) {
             perror("fgets error");
@@ -148,18 +182,13 @@ int main(int argc, char **argv){
             exit(1);
         }
 
+
       // send the request to the server
       if (rio_writen(connID,cmd,strlen(cmd)) == -1){
-        perror("not able to send the data");
-        close(connID);
-        exit(1);
-      }
-      //read server response
-      while((rio_readlineb(&rio,buf,MAXLINE)) >0){
-              if(!strcmp(buf,"\r\n"))
-                break;
-              printf("%s",buf);
-      }
+          perror("not able to send the data");
+          close(connID);
+          exit(1);
+        }
 
     }
 
