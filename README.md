@@ -35,11 +35,11 @@ Using Socket programming and threading to make a real-time chatroom in c
 
 
 ### server
-Each user is handled by a seperate thread in the server.The threads synchronises access to a global linked list 
+Each user is handled by a seperate thread in the server.The threads synchronise access to a global linked list 
 storing the user information
 
 ### Client
-When the client connects to the server, it executes a chatroom shell. Each client has 2 running threads one for sending commands and other for recieving msgs both working in sync with each other.
+When the client connects to the server, it executes a chatroom shell. Each client has 2 running threads one for sending commands and other for receiving msgs, both working in sync with each other.
 
 ### TO DO and Contributions
 Feel free to contribute and collaborate 
