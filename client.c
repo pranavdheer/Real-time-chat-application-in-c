@@ -177,9 +177,9 @@ int main(int argc, char **argv){
     while(1){
       // read the command
       if(feof(stdin)) {
-          perror("EOF exit.");
+          puts("EOF exit.");
           close(connID);
-          exit(1);
+          exit(0);
         }
       if ((fgets(cmd, MAXLINE, stdin) == NULL) && ferror(stdin)) {
             perror("fgets error");
