@@ -176,6 +176,11 @@ int main(int argc, char **argv){
     printf("%s",prompt);
     while(1){
       // read the command
+      if(feof(stdin)) {
+          perror("EOF exit.");
+          close(connID);
+          exit(1);
+        }
       if ((fgets(cmd, MAXLINE, stdin) == NULL) && ferror(stdin)) {
             perror("fgets error");
             close(connID);
